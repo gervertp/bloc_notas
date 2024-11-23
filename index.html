@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloc de Notas</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f4f9;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .btn-primary, .btn-secondary {
+            width: auto;
+            font-size: 0.9rem;
+        }
+        #noteInput {
+            font-size: 0.9rem;
+        }
+        #buttonsContainer {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <h1 class="text-center mb-4 text-primary">Bloc de Notas</h1>
+
+        <!-- Área para escribir una nueva nota -->
+        <div class="mb-3">
+            <textarea id="noteInput" class="form-control shadow-sm p-2" rows="3" placeholder="Escribe tu nota aquí..."></textarea>
+        </div>
+        
+        <!-- Botones compactos -->
+        <div id="buttonsContainer">
+            <button id="saveNote" class="btn btn-primary">Guardar Nota</button>
+            <button id="sortNotes" class="btn btn-secondary">Ordenar Notas</button>
+        </div>
+    
+        <hr>
+    
+        <!-- Lista de notas -->
+        <h2 class="mt-4">Notas Guardadas</h2>
+        <div id="noteList" class="row gy-3"></div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables para edición
+        let editingNote = null;
+
+        // Obtener elementos del DOM
+        const noteInput = document.getElementById('noteInput');
+        const saveNote = document.getElementById('saveNote');
+        const noteList = document.getElementById('noteList');
+        const sortNotesButton = document.getElementById('sortNotes');
+
+        // Cargar notas desde localStorage
+        const loadNotes = () => {
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            notes.forEach(noteText => {
+                createNoteElement(noteText);
+            });
+        };
+
+        // Guardar notas en localStorage
+        const saveNotes = () => {
+            const notes = [];
+            document.querySelectorAll('#noteList .card-text').forEach(note => {
+                notes.push(note.textContent);
+            });
+            localStorage.setItem('notes', JSON.stringify(notes));
+        };
+
+        // Crear un elemento de nota
+        const createNoteElement = (noteText) => {
+            const listItem = document.createElement('div');
+            listItem.className = 'card shadow-sm col-md-4';
+            listItem.innerHTML = `
+                <div class="card-body">
+                    <p class="card-text">${noteText}</p>
+                    <div class="d-flex justify-content-between mt-2">
+                        <button class="btn btn-warning btn-sm edit-button">Editar</button>
+                        <button class="btn btn-danger btn-sm delete-button">Eliminar</button>
+                    </div>
+                </div>
+            `;
+
+            // Funcionalidad para eliminar la nota
+            listItem.querySelector('.delete-button').addEventListener('click', () => {
+                noteList.removeChild(listItem);
+                saveNotes();
+            });
+
+            // Funcionalidad para editar la nota
+            listItem.querySelector('.edit-button').addEventListener('click', () => {
+                editingNote = listItem;
+                noteInput.value = listItem.querySelector('.card-text').textContent;
+                saveNote.textContent = 'Actualizar Nota';
+                saveNote.classList.remove('btn-primary');
+                saveNote.classList.add('btn-success');
+            });
+
+            noteList.appendChild(listItem);
+        };
+
+        // Evento para guardar una nueva nota o actualizar
+        saveNote.addEventListener('click', () => {
+            const noteText = noteInput.value.trim();
+            if (noteText === '') {
+                alert('Por favor, escribe una nota.');
+                return;
+            }
+
+            if (editingNote) {
+                // Actualizar una nota existente
+                editingNote.querySelector('.card-text').textContent = noteText;
+                editingNote = null;
+                saveNote.textContent = 'Guardar Nota';
+                saveNote.classList.remove('btn-success');
+                saveNote.classList.add('btn-primary');
+            } else {
+                // Crear y agregar una nueva nota
+                createNoteElement(noteText);
+            }
+
+            // Guardar en localStorage
+            saveNotes();
+            noteInput.value = '';
+        });
+
+        // Evento para ordenar las notas
+        sortNotesButton.addEventListener('click', () => {
+            const notes = Array.from(document.querySelectorAll('#noteList .card')).map(card => ({
+                text: card.querySelector('.card-text').textContent,
+                element: card
+            }));
+
+            notes.sort((a, b) => a.text.localeCompare(b.text));
+            noteList.innerHTML = '';
+            notes.forEach(note => noteList.appendChild(note.element));
+            saveNotes();
+        });
+
+        // Cargar notas al inicio
+        loadNotes();
+    </script>
+</body>
+</html>
